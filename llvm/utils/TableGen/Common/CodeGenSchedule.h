@@ -92,9 +92,9 @@ struct CodeGenSchedRW {
     return TheDef || !Sequence.empty();
   }
 
-#ifndef NDEBUG
+// #ifndef NDEBUG
   void dump() const;
-#endif
+// #endif
 };
 
 /// Represent a transition between SchedClasses induced by SchedVariant.
@@ -161,9 +161,9 @@ struct CodeGenSchedClass {
   // are never mapped directly to inferred scheduling classes.
   bool isInferred() const { return !ItinClassDef; }
 
-#ifndef NDEBUG
+// #ifndef NDEBUG
   void dump(const CodeGenSchedModels *SchedModels) const;
-#endif
+// #endif
 };
 
 /// Represent the cost of allocating a register of register class RCDef.
@@ -292,9 +292,9 @@ struct CodeGenProcModel {
   // Return true if the given write record is referenced by a ReadAdvance.
   bool hasReadOfWrite(const Record *WriteDef) const;
 
-#ifndef NDEBUG
+// #ifndef NDEBUG
   void dump() const;
-#endif
+// #endif
 };
 
 /// Used to correlate instructions to MCInstPredicates specified by

@@ -25,19 +25,21 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/TableGen/Error.h"
 #include <algorithm>
+#include <iostream>
 #include <iterator>
+#include <ostream>
 #include <utility>
 
 using namespace llvm;
 
 #define DEBUG_TYPE "subtarget-emitter"
 
-#ifndef NDEBUG
+// #ifndef NDEBUG
 static void dumpIdxVec(ArrayRef<unsigned> V) {
   for (unsigned Idx : V)
     dbgs() << Idx << ", ";
 }
-#endif
+// #endif
 
 namespace {
 
@@ -164,6 +166,9 @@ struct InstRegexOp : public SetTheory::Operator {
         StringRef InstName = Inst->getName();
         if (!Regexpr || Regexpr->match(InstName.substr(Prefix.size()))) {
           Elts.insert(Inst->TheDef);
+          // Inst->TheDef->dump();
+          // Arg->dump();
+          // std::cerr << "Matched:" << std::string(Inst->AsmString) << " " << std::string(Inst->getName()) << "With:" << std::string(Original) << std::endl;
           NumMatches++;
         }
       };
@@ -851,7 +856,21 @@ void CodeGenSchedModels::collectSchedClasses() {
     createInstRWClass(RWDef);
 
   NumInstrSchedClasses = SchedClasses.size();
-
+  if (std::string(Target.getName()) == "X86") {
+    for (const CodeGenInstruction *Inst : Target.getInstructions()) {
+      unsigned SCIdx = getSchedClassIdx(*Inst);
+      if (!SCIdx) {
+        std::cerr << "No class: " << std::string(Inst->getName()) << std::endl;
+        continue;
+      }
+      CodeGenSchedClass &SC = getSchedClass(SCIdx);
+      SC.dump(this);
+      for (const CGIOperandList::OperandInfo& operand : Inst->Operands) {
+        std::cerr << "Operand Name: " << std::string(operand.Name) << std::endl;
+      }
+      std::cerr << "InstName: " << std::string(Inst->getName()) << " SC Name: " << std::string(SC.Name) << std::endl;
+    }
+  }
   bool EnableDump = false;
   LLVM_DEBUG(EnableDump = true);
   if (!EnableDump)
@@ -1037,6 +1056,7 @@ void CodeGenSchedModels::createInstRWClass(const Record *InstRWDef) {
           // Make sure we didn't already have a InstRW containing this
           // instruction on this model.
           for (const Record *RWD : RWDefs) {
+            /*std::cerr << std::string(RWD->getValueAsDef("SchedModel")->getName()) << std::endl;*/
             if (RWD->getValueAsDef("SchedModel") == RWModelDef &&
                 RWModelDef->getValueAsBit("FullInstRWOverlapCheck")) {
               assert(!InstDefs.empty()); // Checked at function start.
@@ -1053,6 +1073,9 @@ void CodeGenSchedModels::createInstRWClass(const Record *InstRWDef) {
           LLVM_DEBUG(dbgs() << "InstRW: Reuse SC " << OldSCIdx << ":"
                             << SchedClasses[OldSCIdx].Name << " on "
                             << RWModelDef->getName() << "\n");
+          /*std::cerr << "InstRW: Reuse SC " << OldSCIdx << ":"
+                            << SchedClasses[OldSCIdx].Name << " on "
+                            << std::string(RWModelDef->getName()) << "\n";*/
           SchedClasses[OldSCIdx].InstRWs.push_back(InstRWDef);
           continue;
         }
@@ -1064,6 +1087,9 @@ void CodeGenSchedModels::createInstRWClass(const Record *InstRWDef) {
     LLVM_DEBUG(dbgs() << "InstRW: New SC " << SCIdx << ":" << SC.Name << " on "
                       << InstRWDef->getValueAsDef("SchedModel")->getName()
                       << "\n");
+    /*std::cerr << "InstRW: New SC " << SCIdx << ":" << std::string(SC.Name) << " on "
+                      << std::string(InstRWDef->getValueAsDef("SchedModel")->getName())
+                      << "\n";*/
 
     // Preserve ItinDef and Writes/Reads for processors without an InstRW entry.
     SC.ItinClassDef = SchedClasses[OldSCIdx].ItinClassDef;
@@ -1294,9 +1320,9 @@ public:
 
   bool substituteVariants(const PredTransition &Trans);
 
-#ifndef NDEBUG
+// #ifndef NDEBUG
   void dump() const;
-#endif
+// #endif
 
 private:
   bool mutuallyExclusive(const Record *PredDef, ArrayRef<const Record *> Preds,
@@ -2178,7 +2204,7 @@ bool CodeGenProcModel::hasReadOfWrite(const Record *WriteDef) const {
   return ReadOfWriteSet.contains(WriteDef);
 }
 
-#ifndef NDEBUG
+// #ifndef NDEBUG
 void CodeGenProcModel::dump() const {
   dbgs() << Index << ": " << ModelName << " "
          << (ModelDef ? ModelDef->getName() : "inferred") << " "
@@ -2241,4 +2267,4 @@ void PredTransitions::dump() const {
     dbgs() << "}\n";
   }
 }
-#endif // NDEBUG
+// #endif // NDEBUG
